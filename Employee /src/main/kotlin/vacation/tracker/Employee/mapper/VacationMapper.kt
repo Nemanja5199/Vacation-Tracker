@@ -58,7 +58,7 @@ object VacationMapper {
 
 
     private fun calculateUsedDays(vacationDates: List<VacationDates>): Int {
-        return vacationDates.sumBy { vacationDate ->
+        return vacationDates.sumOf { vacationDate ->
             var days = 0
             var currentDate = vacationDate.startDate
 
