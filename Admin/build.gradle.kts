@@ -32,6 +32,7 @@ dependencies {
     implementation("com.michael-bull.kotlin-result:kotlin-result:2.0.0")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation ("org.springframework.boot:spring-boot-starter-security")
+    implementation("javax.xml.bind:jaxb-api:2.4.0-b180830.0359")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:2.0.20-RC")
     implementation("org.hibernate:hibernate-core:6.5.2.Final")
