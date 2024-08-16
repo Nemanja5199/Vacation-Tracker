@@ -15,9 +15,6 @@ RUN gradle clean build -x test
 # Stage 2: Run the application
 FROM openjdk:21
 
-# Set the working directory
-WORKDIR /app
-
 # Copy the built JAR file from the builder stage
 COPY --from=builder /app/build/libs/Admin-0.0.1-SNAPSHOT.jar .
 
