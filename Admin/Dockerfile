@@ -1,4 +1,4 @@
-# Stage 1: Build the application
+
 FROM gradle:latest AS builder
 
 
