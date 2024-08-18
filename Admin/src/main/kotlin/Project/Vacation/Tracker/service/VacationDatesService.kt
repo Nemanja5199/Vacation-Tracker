@@ -2,6 +2,7 @@ package Project.Vacation.Tracker.service
 
 import Project.Vacation.Tracker.model.VacationDates
 import Project.Vacation.Tracker.repository.VacationDatesRepository
+import Project.Vacation.Tracker.repository.VacationRepository
 import Project.Vacation.Tracker.results.VacationDateResult
 import Project.Vacation.Tracker.utils.CsvUtils
 import com.github.michaelbull.result.Err
@@ -16,7 +17,8 @@ import java.time.LocalDate
 
 @Service
 class VacationDatesService(private val vacationDatesRepository: VacationDatesRepository,
-                           private val csvUtils: CsvUtils) {
+                           private val csvUtils: CsvUtils,
+                           private val vacationRepository: VacationRepository) {
 
 
 
@@ -45,6 +47,15 @@ class VacationDatesService(private val vacationDatesRepository: VacationDatesRep
                 return Err(VacationDateResult.DuplicateStartDate(vacationDates.employee.email, vacationDates.startDate))
             }
 
+
+           /* val days = calculateWorkingDays(vacationDates.startDate,vacationDates.endDate)
+
+            val remaingDays= checkEmployeeDats(vacationDates.employee.email,days,vacationDates.startDate.year)
+
+            if(!remaingDays){
+                return@forEach
+            }*/
+
             newVacationDates.add(vacationDates)
         }
 
@@ -53,6 +64,25 @@ class VacationDatesService(private val vacationDatesRepository: VacationDatesRep
 
 
 
+    }
+
+
+    fun checkEmployeeDats(email: String,days:Int,year:Int): Boolean {
+        val vacation = vacationRepository.findByEmployeeEmailAndVacationYear(email,year)
+            .orElse(null)
+
+        if (vacation == null) {
+
+            return false
+        }
+        if (vacation.vacationDays<days){
+            return false
+        }
+
+        val vacationDays = vacation.vacationDays-days
+        vacationRepository.updateVacationDaysByEmail(email,vacationDays)
+        vacationRepository.save(vacation)
+        return true
     }
 
 

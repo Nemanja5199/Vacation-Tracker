@@ -29,7 +29,7 @@ object VacationMapper {
 
 
     private fun toVacationDTO(vacation: Vacation, vacationDates: List<VacationDates>): VacationDTO {
-        val usedDays = calculateUsedDays(vacationDates)
+        val usedDays = calculateUsedDays(vacationDates,vacation.vacationYear)
         return VacationDTO(
             email = vacation.employee.email,
             totalDays = vacation.vacationDays,
@@ -57,8 +57,14 @@ object VacationMapper {
 
 
 
-    private fun calculateUsedDays(vacationDates: List<VacationDates>): Int {
-        return vacationDates.sumOf { vacationDate ->
+    private fun calculateUsedDays(vacationDates: List<VacationDates>, year:Int): Int {
+        return vacationDates
+            .filter { vacationDates ->
+
+                vacationDates.startDate.year == year
+            }
+
+            .sumOf { vacationDate ->
             var days = 0
             var currentDate = vacationDate.startDate
 
