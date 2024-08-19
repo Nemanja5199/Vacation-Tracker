@@ -22,7 +22,7 @@ Before you can run the application, make sure you have the following installed o
 
 1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/your-username/vacation-tracker.git
+   git clone https://github.com/Nemanja5199/Vacation-Tracker.git
    cd vacation-tracker
 
 2. **Navigate to project directory:**
