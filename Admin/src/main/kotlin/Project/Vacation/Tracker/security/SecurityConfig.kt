@@ -9,16 +9,19 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig(private val apiKeyFilter: ApiKeyFilter) {
+class SecurityConfig() {
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .csrf().disable()
             .authorizeRequests()
+            .requestMatchers(
+                "/v3/api-docs/**",
+                "/swagger-ui.html",
+                "/swagger-ui/**"
+            ).permitAll()
             .anyRequest().permitAll()
-            .and()
-            .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter::class.java)
 
 
         return http.build()

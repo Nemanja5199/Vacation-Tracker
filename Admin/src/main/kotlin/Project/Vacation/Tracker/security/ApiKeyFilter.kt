@@ -17,12 +17,22 @@ class ApiKeyFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
+
+        val requestUri = request.requestURI
+        if (requestUri.startsWith("/swagger-ui") ||
+            requestUri.startsWith("/v3/api-docs")) {
+            filterChain.doFilter(request, response)
+            return
+        }
+
         val requestApiKey = request.getHeader("x-api-key")
         if (requestApiKey == null || requestApiKey != apiKey) {
             response.status = HttpServletResponse.SC_UNAUTHORIZED
             response.writer.write("Unauthorized: Invalid API Key")
             return
         }
+
         filterChain.doFilter(request, response)
     }
 }
+
