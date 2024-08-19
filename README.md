@@ -24,3 +24,10 @@ Before you can run the application, make sure you have the following installed o
    ```bash
    git clone https://github.com/your-username/vacation-tracker.git
    cd vacation-tracker
+
+2. **Navigate to project directory:**
+  ```bash
+   cd /path/to/vacation-tracker
+
+
+
