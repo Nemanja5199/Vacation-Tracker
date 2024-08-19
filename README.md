@@ -45,9 +45,7 @@ Before running the application, you need to build the Docker images for both ser
 -`Employee Service/`: Available at http://localhost:8083
 
 
-3.**Stop the Application:**
-   ```bash
-docker-compose down
+
 
 
 
