@@ -28,6 +28,8 @@ class VacationDatesService(private val vacationDatesRepository: VacationDatesRep
 
             val vacationDates = csvUtils.parseVacationDates(file)
             val newVacationDates = mutableListOf<VacationDates>()
+            val availableDaysMap = mutableMapOf<Pair<String, Int>, Int>()
+
 
         vacationDates.forEach{ vacationDates ->
 
@@ -48,13 +50,13 @@ class VacationDatesService(private val vacationDatesRepository: VacationDatesRep
             }
 
 
-           /* val days = calculateWorkingDays(vacationDates.startDate,vacationDates.endDate)
+            val days = calculateWorkingDays(vacationDates.startDate,vacationDates.endDate)
 
-            val remaingDays= checkEmployeeDats(vacationDates.employee.email,days,vacationDates.startDate.year)
+            val remaingDays= checkEmployeeDats(vacationDates.employee.email,days,vacationDates.startDate.year,availableDaysMap)
 
             if(!remaingDays){
                 return@forEach
-            }*/
+            }
 
             newVacationDates.add(vacationDates)
         }
@@ -67,20 +69,22 @@ class VacationDatesService(private val vacationDatesRepository: VacationDatesRep
     }
 
 
-    fun checkEmployeeDats(email: String,days:Int,year:Int): Boolean {
+    fun checkEmployeeDats(email: String,days:Int,year:Int,availableDaysMap: MutableMap<Pair<String, Int>, Int>): Boolean {
         val vacation = vacationRepository.findByEmployeeEmailAndVacationYear(email,year)
             .orElse(null)
+
+        val key = Pair(email,year)
 
         if (vacation == null) {
 
             return false
         }
-        if (vacation.vacationDays<days){
+
+        val availableDays = availableDaysMap.getOrDefault(key, vacation.vacationDays)
+        if (availableDays < days) {
             return false
         }
-
-        val vacationDays = vacation.vacationDays-days
-        vacationRepository.updateVacationDaysByEmail(email,vacationDays)
+        availableDaysMap[key]= availableDays-days
         vacationRepository.save(vacation)
         return true
     }
