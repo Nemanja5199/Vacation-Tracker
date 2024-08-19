@@ -5,6 +5,7 @@ import Project.Vacation.Tracker.repository.VacationDatesRepository
 import Project.Vacation.Tracker.repository.VacationRepository
 import Project.Vacation.Tracker.results.VacationDateResult
 import Project.Vacation.Tracker.utils.CsvUtils
+import Project.Vacation.Tracker.utils.DateUtils
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
@@ -50,7 +51,7 @@ class VacationDatesService(private val vacationDatesRepository: VacationDatesRep
             }
 
 
-            val days = calculateWorkingDays(vacationDates.startDate,vacationDates.endDate)
+            val days = DateUtils.calculateWorkingDays(vacationDates.startDate,vacationDates.endDate)
 
             val remaingDays= checkEmployeeDats(vacationDates.employee.email,days,vacationDates.startDate.year,availableDaysMap)
 
@@ -89,21 +90,7 @@ class VacationDatesService(private val vacationDatesRepository: VacationDatesRep
         return true
     }
 
-
-
-    fun calculateWorkingDays(startDate: LocalDate, endDate: LocalDate): Int {
-        var workDays = 0
-        var date = startDate
-
-        while (!date.isAfter(endDate)) {
-            if (date.dayOfWeek != DayOfWeek.SATURDAY && date.dayOfWeek != DayOfWeek.SUNDAY) {
-                workDays++
-            }
-            date = date.plusDays(1)
-        }
-
-        return workDays
-    }
+    
 
 
 }
