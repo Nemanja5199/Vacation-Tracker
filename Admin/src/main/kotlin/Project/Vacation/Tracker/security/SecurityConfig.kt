@@ -9,7 +9,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig() {
+class SecurityConfig( private val apiKeyFilter: ApiKeyFilter) {
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
@@ -22,8 +22,8 @@ class SecurityConfig() {
                 "/swagger-ui/**"
             ).permitAll()
             .anyRequest().permitAll()
-
-
+            .and()
+            .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter::class.java)
         return http.build()
     }
 }
