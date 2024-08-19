@@ -48,7 +48,12 @@ Before running the application, you need to build the Docker images for both ser
 3. **Stop the Application:**
     ```bash
       docker-compose down
-####
+
+## API Documentation
+Swagger is integrated into the project to provide interactive API documentation.
+1. **Accessing Swagger UI:**
+- `Admin Service Swagger UI/`: Available at [http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html)
+- `Employee Service Swagger UI/`: Available at [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 
 
 
