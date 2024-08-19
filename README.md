@@ -26,7 +26,7 @@ Before you can run the application, make sure you have the following installed o
    cd vacation-tracker
 
 2. **Navigate to project directory:**
-  ```bash
+   ```bash
    cd /path/to/vacation-tracker
 
 
