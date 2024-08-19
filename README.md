@@ -35,7 +35,7 @@ Before running the application, you need to build the Docker images for both ser
    ```bash
    docker-compose build
    
-##Running the Application
+## Running the Application
 1. **Start the Application:**
    ```bash
    docker-compose up -d
