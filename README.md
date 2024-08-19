@@ -41,8 +41,8 @@ Before running the application, you need to build the Docker images for both ser
    docker-compose up -d
    
 2. **Access the Services:**
--Admin Service: Available at http://localhost:8082
--Employee Service: Available at http://localhost:8083
+-`Admin Service/`: Available at http://localhost:8082
+-`Employee Service/`: Available at http://localhost:8083
 
 3.**Stop the Application:**
    ```bash
