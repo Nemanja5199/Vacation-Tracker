@@ -29,5 +29,34 @@ Before you can run the application, make sure you have the following installed o
    ```bash
    cd /path/to/vacation-tracker
 
+## Build the Docker image
+Before running the application, you need to build the Docker images for both services.
+1. **Build the Docker Images:**
+   ```bash
+   docker-compose build
+   
+##Running the Application
+1. **Start the Application:**
+   ```bash
+   docker-compose up -d
+   
+2. **Access the Services:**
+-Admin Service: Available at http://localhost:8082
+-Employee Service: Available at http://localhost:8083
+
+3.**Stop the Application:**
+   ```bash
+docker-compose down
+
+
+
+
+
+
+
+
+
+   
+
 
 
