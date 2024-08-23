@@ -1,8 +1,7 @@
 package Project.Vacation.Tracker.controller
 
 import Project.Vacation.Tracker.dto.EmployeeDTO
-import Project.Vacation.Tracker.model.Employee
-import Project.Vacation.Tracker.results.EmployeeResult
+import Project.Vacation.Tracker.result.EmployeeResult
 import Project.Vacation.Tracker.service.EmployeeService
 import com.github.michaelbull.result.mapBoth
 import org.springframework.http.HttpStatus
@@ -57,6 +56,9 @@ class EmployeeController(private val employeeService: EmployeeService) {
 
                 when (error) {
                     is EmployeeResult.FileParseError -> ResponseEntity.badRequest()
+                        .body(error.message)
+
+                    is EmployeeResult.InvalidDataError -> ResponseEntity.badRequest()
                         .body(error.message)
 
                     is EmployeeResult.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

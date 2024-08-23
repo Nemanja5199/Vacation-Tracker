@@ -7,10 +7,15 @@ import Project.Vacation.Tracker.model.Employee
 import Project.Vacation.Tracker.model.Vacation
 import Project.Vacation.Tracker.model.VacationDates
 import Project.Vacation.Tracker.repository.EmployeeRepository
+import Project.Vacation.Tracker.result.EmployeeResult
+import Project.Vacation.Tracker.result.VacationDateResult
+import Project.Vacation.Tracker.result.VacationResult
+import com.github.michaelbull.result.*
 import org.apache.commons.csv.CSVParser
 import org.apache.commons.csv.CSVFormat
 import org.springframework.stereotype.Component
 import org.springframework.web.multipart.MultipartFile
+import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.time.LocalDate
@@ -21,33 +26,11 @@ import java.util.*
 @Component
 class CsvUtils(private val employeeRepository: EmployeeRepository) {
 
-    /*
-        public  fun parseEmployees(file: MultipartFile): List<Employee> {
-            val employees = mutableListOf<Employee>()
 
-            file.inputStream.bufferedReader().use { reader ->
-                val lines = reader.lines().toList()
-
-                for (line in lines.drop(2)) { // Skip header
-                    val columns = line.split(",")
-                    if (columns.size == 2) {
-                        val email = columns[0].trim()
-                        val password = columns[1].trim()
-                        val employee = Employee(email = email, password = password)
-                        employees.add(employee)
-                    }
-                }
-            }
-
-            return employees
-        }*/
-
-
-    fun parseEmployees(file: MultipartFile): List<Employee> {
+    fun parseEmployees(file: MultipartFile): Result<List<Employee>, EmployeeResult> = runCatching {
         val employees = mutableListOf<Employee>()
 
         file.inputStream.bufferedReader().use { reader ->
-
             val lines = reader.readLines().drop(1)
             val csvParser = CSVParser.parse(
                 lines.joinToString("\n"),
@@ -60,13 +43,24 @@ class CsvUtils(private val employeeRepository: EmployeeRepository) {
                 val employee = Employee(email = email, password = password)
                 employees.add(employee)
             }
+
+            Ok(employees)
         }
 
-        return employees
+
+    }.getOrElse { e ->
+
+        when (e) {
+            is IOException -> Err(EmployeeResult.FileParseError("Failed to read or parse CSV file: ${e.message}"))
+            is IllegalArgumentException -> Err(EmployeeResult.InvalidDataError("Invalid data in CSV file: ${e.message}"))
+            else -> Err(EmployeeResult.UnexpectedError("An unexpected error occurred: ${e.message}"))
+        }
     }
 
 
-    fun parseVacations(file: MultipartFile): List<VacationDTO> {
+    fun parseVacations(file: MultipartFile): Result<List<VacationDTO>, VacationResult> = runCatching {
+
+
         val vacations = mutableListOf<VacationDTO>()
         val vacationYear: Int
 
@@ -97,12 +91,23 @@ class CsvUtils(private val employeeRepository: EmployeeRepository) {
 
 
             }
-            return vacations
+
+            Ok(vacations)
+        }
+
+
+    }.getOrElse { e ->
+
+
+        when (e) {
+            is IOException -> Err(VacationResult.FileParseError("Failed to read or parse CSV file: ${e.message}"))
+            is IllegalArgumentException -> Err(VacationResult.InvalidDataError("Invalid data in CSV file: ${e.message}"))
+            else -> Err(VacationResult.UnexpectedError("An unexpected error occurred: ${e.message}"))
         }
     }
 
 
-    fun parseVacationDates(file: MultipartFile): List<VacationDatesDTO> {
+    fun parseVacationDates(file: MultipartFile): Result<List<VacationDatesDTO>, VacationDateResult> = runCatching {
 
 
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy", Locale.ENGLISH)
@@ -131,13 +136,20 @@ class CsvUtils(private val employeeRepository: EmployeeRepository) {
                 vacationsDates.add(vacationDate)
             }
 
-            return vacationsDates
+            Ok(vacationsDates)
 
 
         }
 
 
+    }.getOrElse { e ->
+
+        when (e) {
+            is IOException -> Err(VacationDateResult.FileParseError("Failed to read or parse CSV file: ${e.message}"))
+            is IllegalArgumentException -> Err(VacationDateResult.InvalidDataError("Invalid data in CSV file: ${e.message}"))
+            else -> Err(VacationDateResult.UnexpectedError("An unexpected error occurred: ${e.message}"))
+        }
     }
-
-
 }
+
+

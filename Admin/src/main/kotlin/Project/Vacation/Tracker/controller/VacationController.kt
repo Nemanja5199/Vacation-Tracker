@@ -1,9 +1,8 @@
 package Project.Vacation.Tracker.controller
 
-import Project.Vacation.Tracker.model.Vacation
-import Project.Vacation.Tracker.results.VacationResult
+import Project.Vacation.Tracker.result.VacationDateResult
+import Project.Vacation.Tracker.result.VacationResult
 import Project.Vacation.Tracker.service.VacationService
-import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.mapBoth
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -75,8 +74,14 @@ class VacationController(private val vacationService: VacationService) {
                     is VacationResult.FileParseError -> ResponseEntity.badRequest()
                         .body(error.message)
 
+                    is VacationResult.InvalidDataError -> ResponseEntity.badRequest()
+                        .body(error.message)
+
                     is VacationResult.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(error.message)
+
+                    is VacationResult.NoVacationsToImport -> ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body("No vacation dates to import")
 
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("An unknown error occurred")

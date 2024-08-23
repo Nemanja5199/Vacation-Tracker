@@ -1,7 +1,7 @@
 package Project.Vacation.Tracker.controller
 
 
-import Project.Vacation.Tracker.results.VacationDateResult
+import Project.Vacation.Tracker.result.VacationDateResult
 import Project.Vacation.Tracker.service.VacationDatesService
 import com.github.michaelbull.result.mapBoth
 import org.springframework.http.HttpStatus
@@ -23,8 +23,8 @@ class VacationDatesController(private val vacationDatesService: VacationDatesSer
         val result = vacationDatesService.processAndSaveVacationDates(file)
 
         return result.mapBoth(
-            success = {
-                ResponseEntity.status(HttpStatus.CREATED).body("Vacation dates imported successfully.")
+            success = { message ->
+                ResponseEntity.ok(message)
             },
             failure = { error ->
                 when (error) {
@@ -36,6 +36,15 @@ class VacationDatesController(private val vacationDatesService: VacationDatesSer
 
                     is VacationDateResult.InvalidVacationPeriod -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body("Invalid vacation period for employee ${error.email}.")
+
+                    is VacationDateResult.FileParseError -> ResponseEntity.badRequest()
+                        .body(error.message)
+
+                    is VacationDateResult.InvalidDataError -> ResponseEntity.badRequest()
+                        .body(error.message)
+
+                    is VacationDateResult.NoVacationsToImport -> ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body("No vacation dates to import")
 
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("An unknown error occurred.")

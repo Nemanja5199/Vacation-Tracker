@@ -1,11 +1,10 @@
 package Project.Vacation.Tracker.service
 
-import Project.Vacation.Tracker.model.Employee
 import Project.Vacation.Tracker.model.Vacation
 import Project.Vacation.Tracker.repository.EmployeeRepository
 import Project.Vacation.Tracker.repository.VacationRepository
-import Project.Vacation.Tracker.results.EmployeeResult
-import Project.Vacation.Tracker.results.VacationResult
+import Project.Vacation.Tracker.result.EmployeeResult
+import Project.Vacation.Tracker.result.VacationResult
 import Project.Vacation.Tracker.utils.CsvUtils
 import com.github.michaelbull.result.*
 import org.springframework.stereotype.Service
@@ -39,42 +38,49 @@ class VacationService(
 
 
     fun proccesAndSaveVacations(file: MultipartFile): Result<String, VacationResult> = runCatching {
-        val vacationsDTO = csvUtils.parseVacations(file)
-
+        val vacationsDTOResult = csvUtils.parseVacations(file)
         val vacations = mutableListOf<Vacation>()
 
-        vacationsDTO.forEach { vacationDTO ->
 
-            val employee = employeeRepository.findByEmail(vacationDTO.email)
-                ?: return Err(VacationResult.EmployeeNotFound)
+        vacationsDTOResult.mapBoth(
+            success = { vacationDTOs ->
+                vacationDTOs.forEach { vacationDTO ->
 
-
-            val vacation = Vacation(
-                vacationDays = vacationDTO.vacationDays,
-                employee = employee,
-                vacationYear = vacationDTO.vacationYear
-            )
-            vacations.add(vacation)
-
-        }
-
-        vacations.filter { isVacationUnique(it) }
+                    val employee = employeeRepository.findByEmail(vacationDTO.email)
+                        ?: return Err(VacationResult.EmployeeNotFound)
 
 
-        if (vacations.isNotEmpty()) {
-            vacationRepository.saveAll(vacations)
-        }
-        "Vacations imported successfully."
-    }.mapError { e ->
-
-        when (e) {
-
-            is IOException -> VacationResult.FileParseError("Failed to read or parse CSV file: ${e.message}")
-            else -> VacationResult.UnexpectedError("An unexpected error occurred: ${e.message}")
-
-        }
+                    val vacation = Vacation(
+                        vacationDays = vacationDTO.vacationDays,
+                        employee = employee,
+                        vacationYear = vacationDTO.vacationYear
+                    )
+                    vacations.add(vacation)
+                }
 
 
+                val uniqueVacations = vacations.filter { isVacationUnique(it) }
+
+
+                if (uniqueVacations.isNotEmpty()) {
+                    vacationRepository.saveAll(uniqueVacations)
+                    Ok("Vacations imported successfully.")
+                } else {
+                    Err(VacationResult.NoVacationsToImport)
+                }
+            },
+            failure = { error ->
+
+                when (error) {
+                    is VacationResult.FileParseError -> Err(VacationResult.FileParseError("Failed to read or parse CSV file: ${error.message}"))
+                    is VacationResult.InvalidDataError -> Err(VacationResult.InvalidDataError("Invalid data in CSV file: ${error.message}"))
+                    else -> Err(VacationResult.UnexpectedError("An unexpected error occurred"))
+                }
+            }
+        )
+    }.getOrElse { e ->
+
+        Err(VacationResult.UnexpectedError("An unexpected error occurred: ${e.message}"))
     }
 
 

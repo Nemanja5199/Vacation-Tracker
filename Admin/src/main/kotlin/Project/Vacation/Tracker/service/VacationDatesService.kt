@@ -4,17 +4,16 @@ import Project.Vacation.Tracker.model.VacationDates
 import Project.Vacation.Tracker.repository.EmployeeRepository
 import Project.Vacation.Tracker.repository.VacationDatesRepository
 import Project.Vacation.Tracker.repository.VacationRepository
-import Project.Vacation.Tracker.results.VacationDateResult
+import Project.Vacation.Tracker.result.VacationDateResult
+import Project.Vacation.Tracker.result.VacationResult
 import Project.Vacation.Tracker.utils.CsvUtils
 import Project.Vacation.Tracker.utils.DateUtils
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.mapBoth
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
-import java.io.IOException
-import java.time.DayOfWeek
-import java.time.LocalDate
 
 
 @Service
@@ -26,58 +25,85 @@ class VacationDatesService(
 ) {
 
 
-    fun processAndSaveVacationDates(file: MultipartFile): Result<VacationDateResult, VacationDateResult> {
-
-        val vacationDatesDTO = csvUtils.parseVacationDates(file)
+    fun processAndSaveVacationDates(file: MultipartFile): Result<String, VacationDateResult> = runCatching {
+        val vacationDatesDTOResult = csvUtils.parseVacationDates(file)
         val newVacationDates = mutableListOf<VacationDates>()
         val availableDaysMap = mutableMapOf<Pair<String, Int>, Int>()
 
+        vacationDatesDTOResult.mapBoth(
+            success = { vacationDatesDTOs ->
+                vacationDatesDTOs.forEach { vacationDatesDTO ->
 
-        vacationDatesDTO.forEach { vacationDatesDTO ->
+                    val employee = employeeRepository.findByEmail(vacationDatesDTO.email)
+                        ?: return Err(VacationDateResult.EmployeeNotFound)
 
-            val employee = employeeRepository.findByEmail(vacationDatesDTO.email)
-                ?: return Err(VacationDateResult.EmployeeNotFound)
-
-            val vacationDates = VacationDates(
-                employee = employee,
-                startDate = vacationDatesDTO.startDate,
-                endDate = vacationDatesDTO.endDate
-            )
-
-
-            val existingVacations = vacationDatesRepository.findByEmployeeEmail(vacationDates.employee.email)
+                    val vacationDates = VacationDates(
+                        employee = employee,
+                        startDate = vacationDatesDTO.startDate,
+                        endDate = vacationDatesDTO.endDate
+                    )
 
 
-            val overlaps = existingVacations.any { existing ->
-                vacationDates.startDate.isBefore(existing.endDate) && vacationDates.endDate.isAfter(existing.startDate)
+                    val existingVacations = vacationDatesRepository.findByEmployeeEmail(vacationDates.employee.email)
+
+
+                    val overlaps = existingVacations.any { existing ->
+                        vacationDates.startDate.isBefore(existing.endDate) && vacationDates.endDate.isAfter(existing.startDate)
+                    }
+
+                    if (overlaps) {
+                        return Err(VacationDateResult.OverlappingVacation(vacationDates.employee.email))
+                    }
+
+
+                    val startDateExists = existingVacations.any { it.startDate == vacationDates.startDate }
+                    if (startDateExists) {
+                        return Err(
+                            VacationDateResult.DuplicateStartDate(
+                                vacationDates.employee.email,
+                                vacationDates.startDate
+                            )
+                        )
+                    }
+
+
+                    val days = DateUtils.calculateWorkingDays(vacationDates.startDate, vacationDates.endDate)
+
+
+                    val remainingDays = checkEmployeeDats(
+                        vacationDates.employee.email,
+                        days,
+                        vacationDates.startDate.year,
+                        availableDaysMap
+                    )
+
+                    if (!remainingDays) {
+
+                        return@forEach
+                    }
+
+                    newVacationDates.add(vacationDates)
+                }
+
+
+                if (newVacationDates.isNotEmpty()) {
+                    vacationDatesRepository.saveAll(newVacationDates)
+                    Ok("Vacation dates imported successfully.")
+                } else {
+                    Err(VacationDateResult.NoVacationsToImport)
+                }
+            },
+            failure = { error ->
+                when (error) {
+                    is VacationDateResult.FileParseError -> Err(VacationDateResult.FileParseError("Failed to read or parse CSV file: ${error.message}"))
+                    is VacationDateResult.InvalidDataError -> Err(VacationDateResult.InvalidDataError("Invalid data in CSV file: ${error.message}"))
+                    else -> Err(VacationDateResult.UnexpectedError("An unexpected error occurred"))
+                }
             }
+        )
+    }.getOrElse { e ->
 
-            if (overlaps) {
-                return Err(VacationDateResult.OverlappingVacation(vacationDates.employee.email))
-            }
-
-            val startDateExists = existingVacations.any { it.startDate == vacationDates.startDate }
-            if (startDateExists) {
-                return Err(VacationDateResult.DuplicateStartDate(vacationDates.employee.email, vacationDates.startDate))
-            }
-
-
-            val days = DateUtils.calculateWorkingDays(vacationDates.startDate, vacationDates.endDate)
-
-            val remaingDays =
-                checkEmployeeDats(vacationDates.employee.email, days, vacationDates.startDate.year, availableDaysMap)
-
-            if (!remaingDays) {
-                return@forEach
-            }
-
-            newVacationDates.add(vacationDates)
-        }
-
-        vacationDatesRepository.saveAll(newVacationDates)
-        return Ok(VacationDateResult.Success)
-
-
+        Err(VacationDateResult.UnexpectedError("An unexpected error occurred: ${e.message}"))
     }
 
 
