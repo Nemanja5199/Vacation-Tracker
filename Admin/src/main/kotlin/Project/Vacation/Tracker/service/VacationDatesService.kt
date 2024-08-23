@@ -1,6 +1,7 @@
 package Project.Vacation.Tracker.service
 
 import Project.Vacation.Tracker.model.VacationDates
+import Project.Vacation.Tracker.repository.EmployeeRepository
 import Project.Vacation.Tracker.repository.VacationDatesRepository
 import Project.Vacation.Tracker.repository.VacationRepository
 import Project.Vacation.Tracker.results.VacationDateResult
@@ -17,27 +18,37 @@ import java.time.LocalDate
 
 
 @Service
-class VacationDatesService(private val vacationDatesRepository: VacationDatesRepository,
-                           private val csvUtils: CsvUtils,
-                           private val vacationRepository: VacationRepository) {
+class VacationDatesService(
+    private val vacationDatesRepository: VacationDatesRepository,
+    private val csvUtils: CsvUtils,
+    private val vacationRepository: VacationRepository,
+    private val employeeRepository: EmployeeRepository
+) {
 
 
+    fun processAndSaveVacationDates(file: MultipartFile): Result<VacationDateResult, VacationDateResult> {
+
+        val vacationDatesDTO = csvUtils.parseVacationDates(file)
+        val newVacationDates = mutableListOf<VacationDates>()
+        val availableDaysMap = mutableMapOf<Pair<String, Int>, Int>()
 
 
+        vacationDatesDTO.forEach { vacationDatesDTO ->
 
-    fun processAndSaveVacationDates( file:MultipartFile):Result<VacationDateResult,VacationDateResult>{
+            val employee = employeeRepository.findByEmail(vacationDatesDTO.email)
+                ?: return Err(VacationDateResult.EmployeeNotFound)
 
-            val vacationDates = csvUtils.parseVacationDates(file)
-            val newVacationDates = mutableListOf<VacationDates>()
-            val availableDaysMap = mutableMapOf<Pair<String, Int>, Int>()
+            val vacationDates = VacationDates(
+                employee = employee,
+                startDate = vacationDatesDTO.startDate,
+                endDate = vacationDatesDTO.endDate
+            )
 
-
-        vacationDates.forEach{ vacationDates ->
 
             val existingVacations = vacationDatesRepository.findByEmployeeEmail(vacationDates.employee.email)
 
 
-            val overlaps = existingVacations.any{ existing ->
+            val overlaps = existingVacations.any { existing ->
                 vacationDates.startDate.isBefore(existing.endDate) && vacationDates.endDate.isAfter(existing.startDate)
             }
 
@@ -51,11 +62,12 @@ class VacationDatesService(private val vacationDatesRepository: VacationDatesRep
             }
 
 
-            val days = DateUtils.calculateWorkingDays(vacationDates.startDate,vacationDates.endDate)
+            val days = DateUtils.calculateWorkingDays(vacationDates.startDate, vacationDates.endDate)
 
-            val remaingDays= checkEmployeeDats(vacationDates.employee.email,days,vacationDates.startDate.year,availableDaysMap)
+            val remaingDays =
+                checkEmployeeDats(vacationDates.employee.email, days, vacationDates.startDate.year, availableDaysMap)
 
-            if(!remaingDays){
+            if (!remaingDays) {
                 return@forEach
             }
 
@@ -66,15 +78,18 @@ class VacationDatesService(private val vacationDatesRepository: VacationDatesRep
         return Ok(VacationDateResult.Success)
 
 
-
     }
 
 
-    fun checkEmployeeDats(email: String,days:Int,year:Int,availableDaysMap: MutableMap<Pair<String, Int>, Int>): Boolean {
-        val vacation = vacationRepository.findByEmployeeEmailAndVacationYear(email,year)
-            .orElse(null)
+    fun checkEmployeeDats(
+        email: String,
+        days: Int,
+        year: Int,
+        availableDaysMap: MutableMap<Pair<String, Int>, Int>
+    ): Boolean {
+        val vacation = vacationRepository.findByEmployeeEmailAndVacationYear(email, year)
 
-        val key = Pair(email,year)
+        val key = Pair(email, year)
 
         if (vacation == null) {
 
@@ -85,12 +100,10 @@ class VacationDatesService(private val vacationDatesRepository: VacationDatesRep
         if (availableDays < days) {
             return false
         }
-        availableDaysMap[key]= availableDays-days
+        availableDaysMap[key] = availableDays - days
         vacationRepository.save(vacation)
         return true
     }
-
-    
 
 
 }

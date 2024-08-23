@@ -15,12 +15,14 @@ import java.util.stream.Collectors
 
 
 @Service
-class EmployeeService(private val employeeRepository: EmployeeRepository,
-                      private val csvUtils: CsvUtils){
+class EmployeeService(
+    private val employeeRepository: EmployeeRepository,
+    private val csvUtils: CsvUtils
+) {
 
-    fun createEmployee(employeeDTO: EmployeeDTO) :Result<EmployeeResult,EmployeeResult> {
+    fun createEmployee(employeeDTO: EmployeeDTO): Result<EmployeeResult, EmployeeResult> {
 
-        if(employeeRepository.findByEmail(employeeDTO.email).isPresent){
+        if (employeeRepository.findByEmail(employeeDTO.email) != null) {
 
             return Err(EmployeeResult.DuplicateEmployee)
         }
@@ -32,12 +34,12 @@ class EmployeeService(private val employeeRepository: EmployeeRepository,
         )
 
 
-       return Ok( EmployeeResult.Success(employeeRepository.save(employee)))
+        return Ok(EmployeeResult.Success(employeeRepository.save(employee)))
 
     }
 
 
-    fun processAndSaveEmployees(file: MultipartFile): Result<String,EmployeeResult> {
+    fun processAndSaveEmployees(file: MultipartFile): Result<String, EmployeeResult> {
 
         return runCatching {
 
@@ -47,9 +49,9 @@ class EmployeeService(private val employeeRepository: EmployeeRepository,
 
             employeeRepository.saveAll(employees)
             "Employees imported successfully."
-        }. mapError { e ->
+        }.mapError { e ->
 
-            when(e){
+            when (e) {
 
                 is IOException -> EmployeeResult.FileParseError("Failed to read or parse CSV file: ${e.message}")
                 else -> EmployeeResult.UnexpectedError("An unexpected error occurred: ${e.message}")
@@ -62,13 +64,9 @@ class EmployeeService(private val employeeRepository: EmployeeRepository,
     }
 
 
-
-
-    private fun isEmployeeUnique( employee: Employee) :Boolean{
-        return employeeRepository.findByEmail(employee.email).isEmpty
+    private fun isEmployeeUnique(employee: Employee): Boolean {
+        return employeeRepository.findByEmail(employee.email) == null
     }
 
 
-
-
-    }
+}

@@ -19,10 +19,6 @@ import org.springframework.web.multipart.MultipartFile
 class VacationController(private val vacationService: VacationService) {
 
 
-
-
-
-
     @PostMapping("/")
     fun setVacationDays(
         @RequestParam("email") email: String,
@@ -41,7 +37,7 @@ class VacationController(private val vacationService: VacationService) {
             failure = { error ->
 
 
-                when(error){
+                when (error) {
 
                     is VacationResult.EmployeeNotFound -> ResponseEntity.status((HttpStatus.NOT_FOUND))
                         .body("Employee not found")
@@ -55,18 +51,12 @@ class VacationController(private val vacationService: VacationService) {
                 }
 
 
-
-
-
             }
 
         )
 
 
-
     }
-
-
 
 
     @PostMapping("/import")
@@ -74,18 +64,20 @@ class VacationController(private val vacationService: VacationService) {
 
         val result = vacationService.proccesAndSaveVacations(file)
 
-        return  result.mapBoth(
+        return result.mapBoth(
 
-            success = { message -> ResponseEntity.ok(message)},
+            success = { message -> ResponseEntity.ok(message) },
 
             failure = { error ->
 
-                when(error){
+                when (error) {
 
                     is VacationResult.FileParseError -> ResponseEntity.badRequest()
                         .body(error.message)
+
                     is VacationResult.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(error.message)
+
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("An unknown error occurred")
                 }
@@ -97,11 +89,6 @@ class VacationController(private val vacationService: VacationService) {
 
 
     }
-
-
-
-
-
 
 
 }

@@ -30,18 +30,19 @@ class VacationDatesController(private val vacationDatesService: VacationDatesSer
                 when (error) {
                     is VacationDateResult.OverlappingVacation -> ResponseEntity.status(HttpStatus.CONFLICT)
                         .body("Vacation date overlaps for employee ${error.email}.")
+
                     is VacationDateResult.DuplicateStartDate -> ResponseEntity.status(HttpStatus.CONFLICT)
                         .body("Duplicate start date ${error.startDate} for employee ${error.email}.")
+
                     is VacationDateResult.InvalidVacationPeriod -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body("Invalid vacation period for employee ${error.email}.")
+
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("An unknown error occurred.")
                 }
             }
         )
     }
-
-
 
 
 }

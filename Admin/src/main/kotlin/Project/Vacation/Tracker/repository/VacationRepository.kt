@@ -10,17 +10,14 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Year
 import java.util.*
 
-interface VacationRepository : JpaRepository<Vacation,Long> {
+interface VacationRepository : JpaRepository<Vacation, Long> {
 
 
+    fun findByEmployeeEmailAndVacationYear(email: String, vacationYear: Int):Vacation?
 
-    fun findByEmployeeEmailAndVacationYear(email: String, vacationYear: Int): Optional<Vacation>
+    fun findByEmployeeAndVacationDaysAndVacationYear(
+        employee: Employee, vacationDays: Int,
+        vacationYear: Int
+    ): Vacation?
 
-    fun findByEmployeeAndVacationDaysAndVacationYear(employee: Employee, vacationDays: Int,
-                                                     vacationYear: Int): Optional<Vacation>
-
-    @Modifying
-    @Transactional
-    @Query("UPDATE Vacation v SET v.vacationDays = :days WHERE v.employee.email = :email")
-    fun updateVacationDaysByEmail(@Param("email") email: String, @Param("days") days: Int): Int
 }

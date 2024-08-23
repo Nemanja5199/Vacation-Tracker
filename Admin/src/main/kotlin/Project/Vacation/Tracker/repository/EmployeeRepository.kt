@@ -6,7 +6,7 @@ import java.util.*
 
 interface EmployeeRepository : JpaRepository<Employee,Long> {
 
-    fun findByEmail(email: String): Optional<Employee>
+    fun findByEmail(email: String): Employee?
 
     fun existsByEmail(email: String): Boolean
 }
