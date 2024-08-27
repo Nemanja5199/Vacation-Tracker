@@ -1,7 +1,7 @@
 package Project.Vacation.Tracker.controller
 
 import Project.Vacation.Tracker.dto.EmployeeDTO
-import Project.Vacation.Tracker.result.EmployeeResult
+import Project.Vacation.Tracker.error.EmployeeError
 import Project.Vacation.Tracker.service.EmployeeService
 import com.github.michaelbull.result.mapBoth
 import org.springframework.http.HttpStatus
@@ -30,7 +30,7 @@ class EmployeeController(private val employeeService: EmployeeService) {
             failure = { error ->
 
                 when (error) {
-                    is EmployeeResult.DuplicateEmployee -> ResponseEntity.status(HttpStatus.CONFLICT)
+                    is EmployeeError.DuplicateEmployee -> ResponseEntity.status(HttpStatus.CONFLICT)
                         .body("Employee already exists")
 
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -55,13 +55,13 @@ class EmployeeController(private val employeeService: EmployeeService) {
             failure = { error ->
 
                 when (error) {
-                    is EmployeeResult.FileParseError -> ResponseEntity.badRequest()
+                    is EmployeeError.FileParseError -> ResponseEntity.badRequest()
                         .body(error.message)
 
-                    is EmployeeResult.InvalidDataError -> ResponseEntity.badRequest()
+                    is EmployeeError.InvalidDataError -> ResponseEntity.badRequest()
                         .body(error.message)
 
-                    is EmployeeResult.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    is EmployeeError.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(error.message)
 
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

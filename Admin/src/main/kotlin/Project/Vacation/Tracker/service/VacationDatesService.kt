@@ -4,8 +4,7 @@ import Project.Vacation.Tracker.model.VacationDates
 import Project.Vacation.Tracker.repository.EmployeeRepository
 import Project.Vacation.Tracker.repository.VacationDatesRepository
 import Project.Vacation.Tracker.repository.VacationRepository
-import Project.Vacation.Tracker.result.VacationDateResult
-import Project.Vacation.Tracker.result.VacationResult
+import Project.Vacation.Tracker.error.VacationDateError
 import Project.Vacation.Tracker.utils.CsvUtils
 import Project.Vacation.Tracker.utils.DateUtils
 import com.github.michaelbull.result.Err
@@ -25,7 +24,7 @@ class VacationDatesService(
 ) {
 
 
-    fun processAndSaveVacationDates(file: MultipartFile): Result<String, VacationDateResult> = runCatching {
+    fun processAndSaveVacationDates(file: MultipartFile): Result<String, VacationDateError> = runCatching {
         val vacationDatesDTOResult = csvUtils.parseVacationDates(file)
         val newVacationDates = mutableListOf<VacationDates>()
         val availableDaysMap = mutableMapOf<Pair<String, Int>, Int>()
@@ -35,7 +34,7 @@ class VacationDatesService(
                 vacationDatesDTOs.forEach { vacationDatesDTO ->
 
                     val employee = employeeRepository.findByEmail(vacationDatesDTO.email)
-                        ?: return Err(VacationDateResult.EmployeeNotFound)
+                        ?: return Err(VacationDateError.EmployeeNotFound)
 
                     val vacationDates = VacationDates(
                         employee = employee,
@@ -52,14 +51,14 @@ class VacationDatesService(
                     }
 
                     if (overlaps) {
-                        return Err(VacationDateResult.OverlappingVacation(vacationDates.employee.email))
+                        return Err(VacationDateError.OverlappingVacation(vacationDates.employee.email))
                     }
 
 
                     val startDateExists = existingVacations.any { it.startDate == vacationDates.startDate }
                     if (startDateExists) {
                         return Err(
-                            VacationDateResult.DuplicateStartDate(
+                            VacationDateError.DuplicateStartDate(
                                 vacationDates.employee.email,
                                 vacationDates.startDate
                             )
@@ -90,20 +89,20 @@ class VacationDatesService(
                     vacationDatesRepository.saveAll(newVacationDates)
                     Ok("Vacation dates imported successfully.")
                 } else {
-                    Err(VacationDateResult.NoVacationsToImport)
+                    Err(VacationDateError.NoVacationsToImport)
                 }
             },
             failure = { error ->
                 when (error) {
-                    is VacationDateResult.FileParseError -> Err(VacationDateResult.FileParseError("Failed to read or parse CSV file: ${error.message}"))
-                    is VacationDateResult.InvalidDataError -> Err(VacationDateResult.InvalidDataError("Invalid data in CSV file: ${error.message}"))
-                    else -> Err(VacationDateResult.UnexpectedError("An unexpected error occurred"))
+                    is VacationDateError.FileParseError -> Err(VacationDateError.FileParseError("Failed to read or parse CSV file: ${error.message}"))
+                    is VacationDateError.InvalidDataError -> Err(VacationDateError.InvalidDataError("Invalid data in CSV file: ${error.message}"))
+                    else -> Err(VacationDateError.UnexpectedError("An unexpected error occurred"))
                 }
             }
         )
     }.getOrElse { e ->
 
-        Err(VacationDateResult.UnexpectedError("An unexpected error occurred: ${e.message}"))
+        Err(VacationDateError.UnexpectedError("An unexpected error occurred: ${e.message}"))
     }
 
 

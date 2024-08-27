@@ -3,13 +3,11 @@ package Project.Vacation.Tracker.service
 import Project.Vacation.Tracker.model.Vacation
 import Project.Vacation.Tracker.repository.EmployeeRepository
 import Project.Vacation.Tracker.repository.VacationRepository
-import Project.Vacation.Tracker.result.EmployeeResult
-import Project.Vacation.Tracker.result.VacationResult
+import Project.Vacation.Tracker.error.VacationError
 import Project.Vacation.Tracker.utils.CsvUtils
 import com.github.michaelbull.result.*
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
-import java.io.IOException
 
 
 @Service
@@ -20,24 +18,25 @@ class VacationService(
     private val csvUtils: CsvUtils
 ) {
 
-    fun addVacationDaysToEmployee(email: String, days: Int, year: Int): Result<VacationResult, VacationResult> {
+    fun addVacationDaysToEmployee(email: String, days: Int, year: Int): Result<String, VacationError> {
 
         val employee = employeeRepository.findByEmail(email)
-            ?: return Err(VacationResult.EmployeeNotFound)
+            ?: return Err(VacationError.EmployeeNotFound)
 
         val existingVacation = vacationRepository.findByEmployeeAndVacationDaysAndVacationYear(employee, days, year)
         return if (existingVacation != null)
-            Err(VacationResult.DuplicateVacation)
+            Err(VacationError.DuplicateVacation)
         else {
             val vacation = Vacation(vacationDays = days, employee = employee, vacationYear = year)
-            Ok(VacationResult.Success(vacationRepository.save(vacation)))
+            vacationRepository.save(vacation)
+            Ok("Vacation for $employee added successfully")
         }
 
 
     }
 
 
-    fun proccesAndSaveVacations(file: MultipartFile): Result<String, VacationResult> = runCatching {
+    fun proccesAndSaveVacations(file: MultipartFile): Result<String, VacationError> = runCatching {
         val vacationsDTOResult = csvUtils.parseVacations(file)
         val vacations = mutableListOf<Vacation>()
 
@@ -47,7 +46,7 @@ class VacationService(
                 vacationDTOs.forEach { vacationDTO ->
 
                     val employee = employeeRepository.findByEmail(vacationDTO.email)
-                        ?: return Err(VacationResult.EmployeeNotFound)
+                        ?: return Err(VacationError.EmployeeNotFound)
 
 
                     val vacation = Vacation(
@@ -66,21 +65,21 @@ class VacationService(
                     vacationRepository.saveAll(uniqueVacations)
                     Ok("Vacations imported successfully.")
                 } else {
-                    Err(VacationResult.NoVacationsToImport)
+                    Err(VacationError.NoVacationsToImport)
                 }
             },
             failure = { error ->
 
                 when (error) {
-                    is VacationResult.FileParseError -> Err(VacationResult.FileParseError("Failed to read or parse CSV file: ${error.message}"))
-                    is VacationResult.InvalidDataError -> Err(VacationResult.InvalidDataError("Invalid data in CSV file: ${error.message}"))
-                    else -> Err(VacationResult.UnexpectedError("An unexpected error occurred"))
+                    is VacationError.FileParseError -> Err(VacationError.FileParseError("Failed to read or parse CSV file: ${error.message}"))
+                    is VacationError.InvalidDataError -> Err(VacationError.InvalidDataError("Invalid data in CSV file: ${error.message}"))
+                    else -> Err(VacationError.UnexpectedError("An unexpected error occurred"))
                 }
             }
         )
     }.getOrElse { e ->
 
-        Err(VacationResult.UnexpectedError("An unexpected error occurred: ${e.message}"))
+        Err(VacationError.UnexpectedError("An unexpected error occurred: ${e.message}"))
     }
 
 

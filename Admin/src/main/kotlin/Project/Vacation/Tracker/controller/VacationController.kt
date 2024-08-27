@@ -1,7 +1,6 @@
 package Project.Vacation.Tracker.controller
 
-import Project.Vacation.Tracker.result.VacationDateResult
-import Project.Vacation.Tracker.result.VacationResult
+import Project.Vacation.Tracker.error.VacationError
 import Project.Vacation.Tracker.service.VacationService
 import com.github.michaelbull.result.mapBoth
 import org.springframework.http.HttpStatus
@@ -38,10 +37,10 @@ class VacationController(private val vacationService: VacationService) {
 
                 when (error) {
 
-                    is VacationResult.EmployeeNotFound -> ResponseEntity.status((HttpStatus.NOT_FOUND))
+                    is VacationError.EmployeeNotFound -> ResponseEntity.status((HttpStatus.NOT_FOUND))
                         .body("Employee not found")
 
-                    is VacationResult.DuplicateVacation -> ResponseEntity.status((HttpStatus.CONFLICT))
+                    is VacationError.DuplicateVacation -> ResponseEntity.status((HttpStatus.CONFLICT))
                         .body("Vacation already exists")
 
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -71,16 +70,16 @@ class VacationController(private val vacationService: VacationService) {
 
                 when (error) {
 
-                    is VacationResult.FileParseError -> ResponseEntity.badRequest()
+                    is VacationError.FileParseError -> ResponseEntity.badRequest()
                         .body(error.message)
 
-                    is VacationResult.InvalidDataError -> ResponseEntity.badRequest()
+                    is VacationError.InvalidDataError -> ResponseEntity.badRequest()
                         .body(error.message)
 
-                    is VacationResult.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    is VacationError.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(error.message)
 
-                    is VacationResult.NoVacationsToImport -> ResponseEntity.status(HttpStatus.CONFLICT)
+                    is VacationError.NoVacationsToImport -> ResponseEntity.status(HttpStatus.CONFLICT)
                         .body("No vacation dates to import")
 
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

@@ -3,12 +3,11 @@ package Project.Vacation.Tracker.service
 import Project.Vacation.Tracker.dto.EmployeeDTO
 import Project.Vacation.Tracker.model.Employee
 import Project.Vacation.Tracker.repository.EmployeeRepository
-import Project.Vacation.Tracker.result.EmployeeResult
+import Project.Vacation.Tracker.error.EmployeeError
 import Project.Vacation.Tracker.utils.CsvUtils
 import com.github.michaelbull.result.*
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
-import java.io.IOException
 
 
 @Service
@@ -17,11 +16,11 @@ class EmployeeService(
     private val csvUtils: CsvUtils
 ) {
 
-    fun createEmployee(employeeDTO: EmployeeDTO): Result<String, EmployeeResult> {
+    fun createEmployee(employeeDTO: EmployeeDTO): Result<String, EmployeeError> {
 
         if (employeeRepository.findByEmail(employeeDTO.email) != null) {
 
-            return Err(EmployeeResult.DuplicateEmployee)
+            return Err(EmployeeError.DuplicateEmployee)
         }
 
 
@@ -37,7 +36,7 @@ class EmployeeService(
     }
 
 
-    fun processAndSaveEmployees(file: MultipartFile): Result<String, EmployeeResult> = runCatching {
+    fun processAndSaveEmployees(file: MultipartFile): Result<String, EmployeeError> = runCatching {
 
 
         val employees = csvUtils.parseEmployees(file)
@@ -51,9 +50,9 @@ class EmployeeService(
             failure = { error ->
 
                 when (error) {
-                    is EmployeeResult.FileParseError -> EmployeeResult.FileParseError("Failed to read or parse CSV file: ${error.message}")
-                    is EmployeeResult.InvalidDataError -> EmployeeResult.InvalidDataError("Invalid data in CSV file: ${error.message}")
-                    else -> EmployeeResult.UnexpectedError("An unknown error occurred")
+                    is EmployeeError.FileParseError -> EmployeeError.FileParseError("Failed to read or parse CSV file: ${error.message}")
+                    is EmployeeError.InvalidDataError -> EmployeeError.InvalidDataError("Invalid data in CSV file: ${error.message}")
+                    else -> EmployeeError.UnexpectedError("An unknown error occurred")
                 }
 
             }
@@ -63,7 +62,7 @@ class EmployeeService(
         Ok("Employees imported successfully.")
     }.getOrElse { e ->
 
-        Err(EmployeeResult.UnexpectedError("An unexpected error occurred: ${e.message}"))
+        Err(EmployeeError.UnexpectedError("An unexpected error occurred: ${e.message}"))
     }
 
 
