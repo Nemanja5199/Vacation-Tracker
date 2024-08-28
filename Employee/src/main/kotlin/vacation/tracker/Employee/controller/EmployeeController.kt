@@ -16,12 +16,8 @@ class EmployeeController(private val employeeService: EmployeeService) {
     @GetMapping("/user")
     fun getEmployeeDetails(@RequestParam email: String): ResponseEntity<Any> {
         return employeeService.getEmployee(email).mapBoth(
-            success = { result ->
-                when (result) {
-                    is EmployeeError.EmployeeDTOResult -> ResponseEntity.ok(result.employeeDTO)
-                    else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Unexpected success result")
-                }
+            success = { employeeDTO ->
+                ResponseEntity.ok(employeeDTO)
             },
             failure = { error ->
                 when (error) {

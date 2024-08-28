@@ -2,6 +2,7 @@ package vacation.tracker.Employee.service
 
 import com.github.michaelbull.result.*
 import org.springframework.stereotype.Service
+import vacation.tracker.Employee.dto.EmployeeDTO
 import vacation.tracker.Employee.dto.VacationDTO
 import vacation.tracker.Employee.dto.VacationDatesDTO
 import vacation.tracker.Employee.mapper.VacationMapper
@@ -10,6 +11,7 @@ import vacation.tracker.Employee.repository.EmployeeRepository
 import vacation.tracker.Employee.repository.VacationDatesRepository
 import vacation.tracker.Employee.repository.VacationRepository
 import vacation.tracker.Employee.error.EmployeeError
+import vacation.tracker.Employee.model.Employee
 import java.time.LocalDate
 
 @Service
@@ -19,12 +21,12 @@ class EmployeeService(
     private val vacationDatesRepository: VacationDatesRepository
 ) {
 
-    fun getEmployee(email: String): Result<EmployeeError, EmployeeError> {
+    fun getEmployee(email: String): Result<EmployeeDTO, EmployeeError> {
         return runCatching {
             val employee = employeeRepository.findByEmail(email)
                 ?: throw NoSuchElementException("Employee not found")
 
-            EmployeeError.EmployeeDTOResult(VacationMapper.toEmployeeDTO(employee))
+            VacationMapper.toEmployeeDTO(employee)
         }.mapBoth(
             success = { Ok(it) },
             failure = { e ->
