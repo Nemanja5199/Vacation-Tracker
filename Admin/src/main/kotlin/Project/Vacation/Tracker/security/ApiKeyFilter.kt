@@ -20,8 +20,7 @@ class ApiKeyFilter(
 
         val requestUri = request.requestURI
         if (requestUri.startsWith("/swagger-ui") ||
-            requestUri.startsWith("/v3/api-docs")
-        ) {
+            requestUri.startsWith("/v3/api-docs")) {
             filterChain.doFilter(request, response)
             return
         }

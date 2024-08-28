@@ -1,17 +1,18 @@
 package vacation.tracker.Employee.service
 
+import com.fasterxml.jackson.annotation.Nulls
 import com.github.michaelbull.result.*
 import org.springframework.stereotype.Service
 import vacation.tracker.Employee.dto.EmployeeDTO
 import vacation.tracker.Employee.dto.VacationDTO
 import vacation.tracker.Employee.dto.VacationDatesDTO
 import vacation.tracker.Employee.mapper.VacationMapper
+import vacation.tracker.Employee.model.Employee
 import vacation.tracker.Employee.model.VacationDates
 import vacation.tracker.Employee.repository.EmployeeRepository
 import vacation.tracker.Employee.repository.VacationDatesRepository
 import vacation.tracker.Employee.repository.VacationRepository
-import vacation.tracker.Employee.error.EmployeeError
-import vacation.tracker.Employee.model.Employee
+import vacation.tracker.Employee.results.EmployeeResult
 import java.time.LocalDate
 
 @Service
@@ -21,24 +22,24 @@ class EmployeeService(
     private val vacationDatesRepository: VacationDatesRepository
 ) {
 
-    fun getEmployee(email: String): Result<EmployeeDTO, EmployeeError> {
+    fun getEmployee(email: String): Result<EmployeeResult, EmployeeResult> {
         return runCatching {
             val employee = employeeRepository.findByEmail(email)
                 ?: throw NoSuchElementException("Employee not found")
 
-            VacationMapper.toEmployeeDTO(employee)
+            EmployeeResult.EmployeeDTOResult(VacationMapper.toEmployeeDTO(employee))
         }.mapBoth(
             success = { Ok(it) },
             failure = { e ->
                 when (e) {
-                    is NoSuchElementException -> Err(EmployeeError.EmployeeNotFound)
-                    else -> Err(EmployeeError.UnexpectedError("An unexpected error occurred: ${e.message}"))
+                    is NoSuchElementException -> Err(EmployeeResult.EmployeeNotFound)
+                    else -> Err(EmployeeResult.UnexpectedError("An unexpected error occurred: ${e.message}"))
                 }
             }
         )
     }
 
-    fun getVacationDetails(email: String): Result<List<VacationDTO>, EmployeeError> {
+    fun getVacationDetails(email: String): Result<List<VacationDTO>, EmployeeResult> {
         return runCatching {
             val checkEmployee = employeeRepository.existsByEmail(email)
             if(!checkEmployee){
@@ -53,15 +54,15 @@ class EmployeeService(
             failure = { e ->
                 when(e){
 
-                    is NoSuchElementException -> Err(EmployeeError.EmployeeNotFound)
-                    else -> Err(EmployeeError.UnexpectedError("An unexpected error occurred: ${e.message}"))
+                    is NoSuchElementException -> Err(EmployeeResult.EmployeeNotFound)
+                    else -> Err(EmployeeResult.UnexpectedError("An unexpected error occurred: ${e.message}"))
                 }
 
             }
         )
     }
 
-    fun getVacationDatesDetails(email: String, fromDate: LocalDate, toDate: LocalDate): Result<List<VacationDatesDTO>, EmployeeError> {
+    fun getVacationDatesDetails(email: String, fromDate: LocalDate, toDate: LocalDate): Result<List<VacationDatesDTO>, EmployeeResult> {
         return runCatching {
 
             val checkEmployee = employeeRepository.existsByEmail(email)
@@ -80,14 +81,14 @@ class EmployeeService(
 
                 when(e){
 
-                    is NoSuchElementException -> Err(EmployeeError.EmployeeNotFound)
-                    else -> Err(EmployeeError.UnexpectedError("An unexpected error occurred: ${e.message}")) }
+                    is NoSuchElementException -> Err(EmployeeResult.EmployeeNotFound)
+                    else -> Err(EmployeeResult.UnexpectedError("An unexpected error occurred: ${e.message}")) }
                 }
 
         )
     }
 
-    fun addVacationDates(vacationDatesDTO: VacationDatesDTO): Result<Boolean, EmployeeError> {
+    fun addVacationDates(vacationDatesDTO: VacationDatesDTO): Result<Boolean, EmployeeResult> {
         return runCatching {
             val employee = employeeRepository.findByEmail(vacationDatesDTO.email)
                 ?: throw NoSuchElementException("Employee not found")
@@ -114,9 +115,9 @@ class EmployeeService(
             success = { Ok(it) },
             failure = { e ->
                 when (e) {
-                    is NoSuchElementException -> Err(EmployeeError.EmployeeNotFound)
-                    is IllegalArgumentException -> Err(EmployeeError.DuplicateVacationDates)
-                    else -> Err(EmployeeError.UnexpectedError("An unexpected error occurred: ${e.message}"))
+                    is NoSuchElementException -> Err(EmployeeResult.EmployeeNotFound)
+                    is IllegalArgumentException -> Err(EmployeeResult.DuplicateVacationDates)
+                    else -> Err(EmployeeResult.UnexpectedError("An unexpected error occurred: ${e.message}"))
                 }
             }
         )

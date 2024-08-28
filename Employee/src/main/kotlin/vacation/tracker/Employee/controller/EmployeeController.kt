@@ -4,9 +4,11 @@ import com.github.michaelbull.result.*
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import vacation.tracker.Employee.dto.EmployeeDTO
+import vacation.tracker.Employee.dto.VacationDTO
 import vacation.tracker.Employee.dto.VacationDatesDTO
 import vacation.tracker.Employee.service.EmployeeService
-import vacation.tracker.Employee.error.EmployeeError
+import vacation.tracker.Employee.results.EmployeeResult
 import java.time.LocalDate
 
 @RestController
@@ -16,14 +18,18 @@ class EmployeeController(private val employeeService: EmployeeService) {
     @GetMapping("/user")
     fun getEmployeeDetails(@RequestParam email: String): ResponseEntity<Any> {
         return employeeService.getEmployee(email).mapBoth(
-            success = { employeeDTO ->
-                ResponseEntity.ok(employeeDTO)
+            success = { result ->
+                when (result) {
+                    is EmployeeResult.EmployeeDTOResult -> ResponseEntity.ok(result.employeeDTO)
+                    else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Unexpected success result")
+                }
             },
             failure = { error ->
                 when (error) {
-                    is EmployeeError.EmployeeNotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    is EmployeeResult.EmployeeNotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("Employee not found")
-                    is EmployeeError.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    is EmployeeResult.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(error.message)
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("An unexpected error occurred")
@@ -40,9 +46,9 @@ class EmployeeController(private val employeeService: EmployeeService) {
             },
             failure = { error ->
                 when (error) {
-                    is EmployeeError.EmployeeNotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    is EmployeeResult.EmployeeNotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("Employee not found")
-                    is EmployeeError.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    is EmployeeResult.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(error.message)
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("An unexpected error occurred")
@@ -63,9 +69,9 @@ class EmployeeController(private val employeeService: EmployeeService) {
             },
             failure = { error ->
                 when (error) {
-                    is EmployeeError.EmployeeNotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    is EmployeeResult.EmployeeNotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("Employee not found")
-                    is EmployeeError.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    is EmployeeResult.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(error.message)
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("An unexpected error occurred")
@@ -82,11 +88,11 @@ class EmployeeController(private val employeeService: EmployeeService) {
             },
             failure = { error ->
                 when (error) {
-                    is EmployeeError.EmployeeNotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    is EmployeeResult.EmployeeNotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("Employee not found")
-                    is EmployeeError.VacationDateAlreadyExists -> ResponseEntity.status(HttpStatus.CONFLICT)
+                    is EmployeeResult.VacationDateAlreadyExists -> ResponseEntity.status(HttpStatus.CONFLICT)
                         .body("Vacation date already exists")
-                    is EmployeeError.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    is EmployeeResult.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(error.message)
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("An unexpected error occurred")
