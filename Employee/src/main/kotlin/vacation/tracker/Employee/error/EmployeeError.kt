@@ -7,8 +7,7 @@ import vacation.tracker.Employee.model.Employee
 
 sealed class EmployeeError {
 
-
-    data class Success(val employee: Employee) : EmployeeError()
+    
     data class EmployeeDTOResult(val employeeDTO: EmployeeDTO) : EmployeeError()
     data class VacationDTOListResult(val vacationDTOList: List<VacationDTO>) : EmployeeError()
     data class VacationDatesDTOListResult(val vacationDatesDTOList: List<VacationDatesDTO>) : EmployeeError()
