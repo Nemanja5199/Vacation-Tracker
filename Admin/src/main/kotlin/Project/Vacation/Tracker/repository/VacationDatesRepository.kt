@@ -11,7 +11,7 @@ interface VacationDatesRepository : JpaRepository<VacationDates,Long> {
         email: String,
         startDate: LocalDate,
         endDate: LocalDate
-    ): Optional<VacationDates>
+    ): VacationDates?
 
 
     fun findByEmployeeEmail(email: String): List<VacationDates>

@@ -40,4 +40,5 @@ out/
 .kotlin
 
 #Directories
-/Admin/.gradle/
+/Employee/.gradle/
+

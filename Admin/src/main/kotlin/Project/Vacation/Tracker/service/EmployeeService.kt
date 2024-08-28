@@ -1,28 +1,26 @@
 package Project.Vacation.Tracker.service
 
 import Project.Vacation.Tracker.dto.EmployeeDTO
-import Project.Vacation.Tracker.exeption.EmployeeExistsException
 import Project.Vacation.Tracker.model.Employee
-import Project.Vacation.Tracker.model.Vacation
 import Project.Vacation.Tracker.repository.EmployeeRepository
-import Project.Vacation.Tracker.results.EmployeeResult
+import Project.Vacation.Tracker.error.EmployeeError
 import Project.Vacation.Tracker.utils.CsvUtils
 import com.github.michaelbull.result.*
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
-import java.io.IOException
-import java.util.stream.Collectors
 
 
 @Service
-class EmployeeService(private val employeeRepository: EmployeeRepository,
-                      private val csvUtils: CsvUtils){
+class EmployeeService(
+    private val employeeRepository: EmployeeRepository,
+    private val csvUtils: CsvUtils
+) {
 
-    fun createEmployee(employeeDTO: EmployeeDTO) :Result<EmployeeResult,EmployeeResult> {
+    fun createEmployee(employeeDTO: EmployeeDTO): Result<String, EmployeeError> {
 
-        if(employeeRepository.findByEmail(employeeDTO.email).isPresent){
+        if (employeeRepository.findByEmail(employeeDTO.email) != null) {
 
-            return Err(EmployeeResult.DuplicateEmployee)
+            return Err(EmployeeError.DuplicateEmployee)
         }
 
 
@@ -31,44 +29,46 @@ class EmployeeService(private val employeeRepository: EmployeeRepository,
             password = employeeDTO.password
         )
 
+        employeeRepository.save(employee)
 
-       return Ok( EmployeeResult.Success(employeeRepository.save(employee)))
+      return  Ok("Employee added")
 
     }
 
 
-    fun processAndSaveEmployees(file: MultipartFile): Result<String,EmployeeResult> {
-
-        return runCatching {
+    fun processAndSaveEmployees(file: MultipartFile): Result<String, EmployeeError> = runCatching {
 
 
-            val employees = csvUtils.parseEmployees(file)
-                .filter { isEmployeeUnique(it) }
+        val employees = csvUtils.parseEmployees(file)
 
-            employeeRepository.saveAll(employees)
-            "Employees imported successfully."
-        }. mapError { e ->
+        employees.mapBoth(
+            success = { employees ->
+                employees.filter { isEmployeeUnique(it) }
+                employeeRepository.saveAll(employees)
+            },
 
-            when(e){
+            failure = { error ->
 
-                is IOException -> EmployeeResult.FileParseError("Failed to read or parse CSV file: ${e.message}")
-                else -> EmployeeResult.UnexpectedError("An unexpected error occurred: ${e.message}")
+                when (error) {
+                    is EmployeeError.FileParseError -> EmployeeError.FileParseError("Failed to read or parse CSV file: ${error.message}")
+                    is EmployeeError.InvalidDataError -> EmployeeError.InvalidDataError("Invalid data in CSV file: ${error.message}")
+                    else -> EmployeeError.UnexpectedError("An unknown error occurred")
+                }
+
             }
 
+        )
 
-        }
+        Ok("Employees imported successfully.")
+    }.getOrElse { e ->
 
-
+        Err(EmployeeError.UnexpectedError("An unexpected error occurred: ${e.message}"))
     }
 
 
-
-
-    private fun isEmployeeUnique( employee: Employee) :Boolean{
-        return employeeRepository.findByEmail(employee.email).isEmpty
+    private fun isEmployeeUnique(employee: Employee): Boolean {
+        return employeeRepository.findByEmail(employee.email) == null
     }
 
 
-
-
-    }
+}

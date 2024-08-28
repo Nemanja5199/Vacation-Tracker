@@ -33,7 +33,6 @@ dependencies {
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib:2.0.20-RC")
 	implementation("org.hibernate:hibernate-core:6.5.2.Final")
-	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("org.postgresql:postgresql")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.security:spring-security-test")

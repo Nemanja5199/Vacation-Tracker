@@ -1,9 +1,7 @@
 package Project.Vacation.Tracker.controller
 
-import Project.Vacation.Tracker.model.Vacation
-import Project.Vacation.Tracker.results.VacationResult
+import Project.Vacation.Tracker.error.VacationError
 import Project.Vacation.Tracker.service.VacationService
-import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.mapBoth
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,10 +15,6 @@ import org.springframework.web.multipart.MultipartFile
 @RestController
 @RequestMapping("/api/vacation")
 class VacationController(private val vacationService: VacationService) {
-
-
-
-
 
 
     @PostMapping("/")
@@ -41,12 +35,12 @@ class VacationController(private val vacationService: VacationService) {
             failure = { error ->
 
 
-                when(error){
+                when (error) {
 
-                    is VacationResult.EmployeeNotFound -> ResponseEntity.status((HttpStatus.NOT_FOUND))
+                    is VacationError.EmployeeNotFound -> ResponseEntity.status((HttpStatus.NOT_FOUND))
                         .body("Employee not found")
 
-                    is VacationResult.DuplicateVacation -> ResponseEntity.status((HttpStatus.CONFLICT))
+                    is VacationError.DuplicateVacation -> ResponseEntity.status((HttpStatus.CONFLICT))
                         .body("Vacation already exists")
 
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -55,18 +49,12 @@ class VacationController(private val vacationService: VacationService) {
                 }
 
 
-
-
-
             }
 
         )
 
 
-
     }
-
-
 
 
     @PostMapping("/import")
@@ -74,18 +62,26 @@ class VacationController(private val vacationService: VacationService) {
 
         val result = vacationService.proccesAndSaveVacations(file)
 
-        return  result.mapBoth(
+        return result.mapBoth(
 
-            success = { message -> ResponseEntity.ok(message)},
+            success = { message -> ResponseEntity.ok(message) },
 
             failure = { error ->
 
-                when(error){
+                when (error) {
 
-                    is VacationResult.FileParseError -> ResponseEntity.badRequest()
+                    is VacationError.FileParseError -> ResponseEntity.badRequest()
                         .body(error.message)
-                    is VacationResult.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+
+                    is VacationError.InvalidDataError -> ResponseEntity.badRequest()
                         .body(error.message)
+
+                    is VacationError.UnexpectedError -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(error.message)
+
+                    is VacationError.NoVacationsToImport -> ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body("No vacation dates to import")
+
                     else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("An unknown error occurred")
                 }
@@ -97,11 +93,6 @@ class VacationController(private val vacationService: VacationService) {
 
 
     }
-
-
-
-
-
 
 
 }
