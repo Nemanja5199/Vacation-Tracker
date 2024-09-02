@@ -38,10 +38,16 @@ dependencies {
     implementation("org.hibernate:hibernate-core:6.5.2.Final")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
     runtimeOnly("org.postgresql:postgresql")
+
+
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("org.assertj:assertj-core:3.24.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    compileOnly("org.springframework.boot:spring-boot-devtools")
+
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
 }
 
 kotlin {
