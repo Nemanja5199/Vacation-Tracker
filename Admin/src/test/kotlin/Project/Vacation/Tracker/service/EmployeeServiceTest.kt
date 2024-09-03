@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
 import org.springframework.web.multipart.MultipartFile
+import java.io.IOException
 
 
 class EmployeeServiceTest {
@@ -61,7 +62,7 @@ class EmployeeServiceTest {
     }
 
     @Test
-    fun `process And Save Employees Successfully Imports Employees`() {
+    fun `process And save Employees Successfully Imports Employees`() {
         // Given
         val file = mock(MultipartFile::class.java)
         val employees = listOf(
@@ -81,7 +82,7 @@ class EmployeeServiceTest {
     }
 
     @Test
-    fun `process And Save Employees Fails When Csv Parsing Fails`() {
+    fun `process And save Employees Fails When Csv Parsing Fails`() {
         // Given
         val file = mock(MultipartFile::class.java)
         `when`(csvUtils.parseEmployees(file)).thenReturn(Err(EmployeeError.FileParseError("Invalid CSV format")))
@@ -94,5 +95,35 @@ class EmployeeServiceTest {
         verify(employeeRepository, never()).saveAll(anyList())
     }
 
+    @Test
+    fun `process and save Employees Fails When Data is Invalid`() {
+
+        //Given
+        val file = mock(MultipartFile::class.java)
+        `when`(csvUtils.parseEmployees(file)).thenReturn(Err(EmployeeError.InvalidDataError("Invalid Data")))
+
+        //When
+        val result = employeeService.processAndSaveEmployees(file)
+
+        //Then
+        assertThat(result).isEqualTo(Err(EmployeeError.InvalidDataError("Invalid data in CSV file: Invalid Data")))
+        verify(employeeRepository, never()).saveAll(anyList())
+    }
+
+
+
+    @Test
+    fun `processAndSaveEmployeesFailsWhenUnexpectedErrorOccurs`() {
+        // Given
+        val file = mock(MultipartFile::class.java)
+        `when`(csvUtils.parseEmployees(file)).thenReturn(Err(EmployeeError.UnexpectedError("An unknown error occurred")))
+
+        // When
+        val result = employeeService.processAndSaveEmployees(file)
+
+        // Then
+        assertThat(result).isEqualTo(Err(EmployeeError.UnexpectedError("An unknown error occurred")))
+        verify(employeeRepository, never()).saveAll(anyList())
+    }
 
 }
