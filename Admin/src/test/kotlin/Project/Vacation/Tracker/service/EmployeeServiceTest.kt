@@ -113,7 +113,7 @@ class EmployeeServiceTest {
 
 
     @Test
-    fun `processAndSaveEmployeesFailsWhenUnexpectedErrorOccurs`() {
+    fun `process And Save Employees Fails When Unexpected Error Occurs`() {
         // Given
         val file = mock(MultipartFile::class.java)
         `when`(csvUtils.parseEmployees(file)).thenReturn(Err(EmployeeError.UnexpectedError("An unknown error occurred")))
