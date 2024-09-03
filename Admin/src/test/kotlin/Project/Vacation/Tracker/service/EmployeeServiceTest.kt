@@ -6,32 +6,33 @@ import Project.Vacation.Tracker.service.EmployeeService
 import Project.Vacation.Tracker.utils.CsvUtils
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
-import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.*
 import org.springframework.web.multipart.MultipartFile
 
 
 class EmployeeServiceTest {
 
-    private val employeeRepository = mockk<EmployeeRepository>(relaxed = true)
-    private val csvUtils = mockk<CsvUtils>()
+    private lateinit var employeeRepository: EmployeeRepository
+    private lateinit var csvUtils: CsvUtils
     private lateinit var employeeService: EmployeeService
 
     @BeforeEach
     fun setUp() {
+        employeeRepository = mock(EmployeeRepository::class.java)
+        csvUtils = mock(CsvUtils::class.java)
         employeeService = EmployeeService(employeeRepository, csvUtils)
     }
 
     @Test
-    fun createEmployeeSuccessfully() {
+    fun `should create employee`() {
         // Given
         val employeeDTO = EmployeeDTO(email = "user1@rbt.rs", password = "pdsadasdasda")
-        every { employeeRepository.findByEmail(employeeDTO.email) } returns null
-        every { employeeRepository.save(any<Employee>()) } returns Employee(
-            email = employeeDTO.email,
-            password = employeeDTO.password
+        `when`(employeeRepository.findByEmail(employeeDTO.email)).thenReturn(null)
+        `when`(employeeRepository.save(any(Employee::class.java))).thenReturn(
+            Employee(email = employeeDTO.email, password = employeeDTO.password)
         )
 
         // When
@@ -39,44 +40,58 @@ class EmployeeServiceTest {
 
         // Then
         assertThat(result).isEqualTo(Ok("Employee added"))
-        verify { employeeRepository.save(any<Employee>()) }
+        verify(employeeRepository).save(any(Employee::class.java))
     }
 
     @Test
-    fun createEmployeeFailsWhenEmailAlreadyExists() {
+    fun `create Employee Fails WhenEmail Already Exists`() {
         // Given
         val employeeDTO = EmployeeDTO(email = "user1@rbt.rs", password = "pdsadasdasda")
-        every { employeeRepository.findByEmail(employeeDTO.email) } returns Employee(
-            email = employeeDTO.email,
-            password = "existingPassword"
+        `when`(employeeRepository.findByEmail(employeeDTO.email)).thenReturn(
+            Employee(email = employeeDTO.email, password = "existingPassword")
         )
+
 
         // When
         val result = employeeService.createEmployee(employeeDTO)
 
         // Then
         assertThat(result).isEqualTo(Err(EmployeeError.DuplicateEmployee))
-        verify(exactly = 0) { employeeRepository.save(any<Employee>()) }
+        verify(employeeRepository, never()).save(any(Employee::class.java))
     }
 
     @Test
-    fun processAndSaveEmployeesSuccessfullyImportsEmployees() {
+    fun `process And Save Employees Successfully Imports Employees`() {
         // Given
-        val file = mockk<MultipartFile>()
+        val file = mock(MultipartFile::class.java)
         val employees = listOf(
-            Employee(email = "user1@rbt.rs", password = "hohohio"),
-            Employee(email = "user2@rbt.rs", password = "siajodjaoi")
+            Employee(email = "user1@rbt.rs", password = "password1"),
+            Employee(email = "user2@rbt.rs", password = "password2")
         )
-        every { csvUtils.parseEmployees(file) } returns Ok(employees)
-        every { employeeRepository.findByEmail(any()) } returns null
-        every { employeeRepository.saveAll(employees) } returns employees
+        `when`(csvUtils.parseEmployees(file)).thenReturn(Ok(employees))
+        `when`(employeeRepository.findByEmail(anyString())).thenReturn(null)
+        `when`(employeeRepository.saveAll(employees)).thenReturn(employees)
 
         // When
         val result = employeeService.processAndSaveEmployees(file)
 
         // Then
         assertThat(result).isEqualTo(Ok("Employees imported successfully."))
-        verify { employeeRepository.saveAll(employees) }
+        verify(employeeRepository).saveAll(employees)
+    }
+
+    @Test
+    fun `process And Save Employees Fails When Csv Parsing Fails`() {
+        // Given
+        val file = mock(MultipartFile::class.java)
+        `when`(csvUtils.parseEmployees(file)).thenReturn(Err(EmployeeError.FileParseError("Invalid CSV format")))
+
+        // When
+        val result = employeeService.processAndSaveEmployees(file)
+
+        // Then
+        assertThat(result).isEqualTo(Err(EmployeeError.FileParseError("Failed to read or parse CSV file: Invalid CSV format")))
+        verify(employeeRepository, never()).saveAll(anyList())
     }
 
 

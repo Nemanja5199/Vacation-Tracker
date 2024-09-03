@@ -37,33 +37,31 @@ class EmployeeService(
 
 
     fun processAndSaveEmployees(file: MultipartFile): Result<String, EmployeeError> = runCatching {
-
-
         val employees = csvUtils.parseEmployees(file)
 
         employees.mapBoth(
             success = { employees ->
-                employees.filter { isEmployeeUnique(it) }
-                employeeRepository.saveAll(employees)
-            },
 
+                val uniqueEmployees = employees.filter { isEmployeeUnique(it) }
+
+                employeeRepository.saveAll(uniqueEmployees)
+
+                Ok("Employees imported successfully.")
+            },
             failure = { error ->
 
                 when (error) {
-                    is EmployeeError.FileParseError -> EmployeeError.FileParseError("Failed to read or parse CSV file: ${error.message}")
-                    is EmployeeError.InvalidDataError -> EmployeeError.InvalidDataError("Invalid data in CSV file: ${error.message}")
-                    else -> EmployeeError.UnexpectedError("An unknown error occurred")
+                    is EmployeeError.FileParseError -> Err(EmployeeError.FileParseError("Failed to read or parse CSV file: ${error.message}"))
+                    is EmployeeError.InvalidDataError -> Err(EmployeeError.InvalidDataError("Invalid data in CSV file: ${error.message}"))
+                    else -> Err(EmployeeError.UnexpectedError("An unknown error occurred"))
                 }
-
             }
-
         )
-
-        Ok("Employees imported successfully.")
     }.getOrElse { e ->
 
         Err(EmployeeError.UnexpectedError("An unexpected error occurred: ${e.message}"))
     }
+
 
 
     private fun isEmployeeUnique(employee: Employee): Boolean {
